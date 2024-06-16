@@ -1,7 +1,7 @@
 /**
  * @name ArukuGenderHighlighter
  * @description Добавляет отображение девочек в голосовых каналах на аруку!
- * @version 1.1
+ * @version 1.2
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
  * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
@@ -10,7 +10,7 @@
 const config = {
     name: "ArukuGenderHighlighter",
     author: "clitorium&ladno",
-    version: "1.1",
+    version: "1.2",
     description: "Добавляет отображение девочек в голосовых каналах на аруку!",
     github: "https://github.com/clitorium/ArukuGenderHighlighter",
     github_raw: "https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js",
