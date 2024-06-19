@@ -1,7 +1,7 @@
 /**
  * @name ArukuGenderHighlighter
  * @description Добавляет отображение девочек в голосовых каналах на аруку!
- * @version 1.2
+ * @version 1.3
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
  * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
@@ -34,7 +34,7 @@
 const config = {
     name: "ArukuGenderHighlighter",
     author: "clitorium&ladno",
-    version: "1.2",
+    version: "1.3",
     description: "Добавляет отображение девочек в голосовых каналах на аруку!",
     github: "https://github.com/clitorium/ArukuGenderHighlighter",
     github_raw: "https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js",
@@ -43,7 +43,8 @@ const config = {
             title: "Хайпуем сучки!",
             type: "fixed",
             items: [
-                "Добавили вам возможность видеть девочек в голосовых чатах! Они подвесчиваются розовым."
+                "Добавили вам возможность видеть девочек в голосовых чатах! Они подвесчиваются розовым.",
+                "Так же, при упоминании человека отображается цвет его высшей роли"
             ]
         }
     ],
@@ -60,6 +61,13 @@ const config = {
                     id: "voice",
                     name: "Войсчаты",
                     note: "Подвечивать ли девочек в голосовых каналах? (грязь)",
+                    value: true
+                },
+                {
+                    type: "switch",
+                    id: "mentions",
+                    name: "Упоминания",
+                    note: "Подсвечивать ли цвета ролей в пингах?",
                     value: true
                 },
                 {
@@ -103,7 +111,8 @@ if (!global.ZeresPluginLibrary) {
  
 module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
      const plugin = (Plugin, Api) => {
-    const {WebpackModules, DiscordModules, Patcher, Utilities, Logger} = Api;
+    const {WebpackModules, DiscordModules, Patcher, Utilities, Logger, ColorConverter} = Api;
+    const {ReactUtils, Utils} = window.BdApi;
 
     const GuildMemberStore = DiscordModules.GuildMemberStore;
     const SelectedGuildStore = DiscordModules.SelectedGuildStore;
@@ -159,6 +168,7 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                 }
         
                 const usernameElement = returnValue.props.children.props.children;
+
         
                 if (!usernameElement || !usernameElement.props || !usernameElement.props.className) {
                     Logger.warn("Username element not found.");
@@ -166,12 +176,43 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                 }
         
                 // Применение стиля
-                usernameElement.props.style = { ...usernameElement.props.style, color: colorstring, backfaceVisibility: "hidden" };
-        
-                if (this.settings.global.saturation) {
-                    usernameElement.props["data-accessibility"] = "desaturate";
+                if (!usernameElement.props.className.includes('usernameSpeaking_')) {
+                    usernameElement.props.style = { ...usernameElement.props.style, color: colorstring, backfaceVisibility: "hidden" };
+                    
+                    if (this.settings.global.saturation) {
+                        usernameElement.props["data-accessibility"] = "desaturate";
+                }
                 }
             });
+        }
+
+        observer({addedNodes}) {
+            if (!addedNodes?.length) return;
+            const element = addedNodes[0];
+            if (element.nodeType !== 1) return;
+            this.colorMentions(element);
+        }
+
+        colorMentions(element) {
+            if (!this.settings.global.mentions) return;
+            if (element.matches(".mention")) element = [element];
+            element = element.querySelectorAll(".mention");
+            if (!element?.length) return;
+            for (const mention of element) {
+                if (mention.className.includes("role") || mention.className.includes("command")) continue;
+                const instance = ReactUtils.getInternalInstance(mention);
+                if (!instance) continue;
+                const props = Utils.findInTree(instance, p => p?.userId || (p?.id && p?.guildId), {walkable: ["memoizedProps", "return"]});
+                if (!props) continue;
+                const member = GuildMemberStore.getMember(SelectedGuildStore.getGuildId(), props.userId ?? props.id);
+                if (!member?.colorString) continue;
+                const important = this.settings.global.important ? "important" : "";
+                if (this.settings.global.saturation) mention.dataset.accessibility = "desaturate"; // Add to desaturation list for Discord
+                mention.style.setProperty("color", member.colorString, important);
+                mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(member.colorString).join(", ")}, 0.1)`, important);
+                mention.addEventListener("mouseenter", () => mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(member.colorString).join(", ")}, 0.3)`, important));
+                mention.addEventListener("mouseleave", () => mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(member.colorString).join(", ")}, 0.1)`, important));
+            }
         }
 
     };
