@@ -1,7 +1,7 @@
 /**
  * @name ArukuGenderHighlighter
  * @description Добавляет отображение девочек в голосовых каналах на аруку!
- * @version 1.3
+ * @version 1.4
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
  * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
@@ -34,7 +34,7 @@
 const config = {
     name: "ArukuGenderHighlighter",
     author: "clitorium&ladno",
-    version: "1.3",
+    version: "1.4",
     description: "Добавляет отображение девочек в голосовых каналах на аруку!",
     github: "https://github.com/clitorium/ArukuGenderHighlighter",
     github_raw: "https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js",
@@ -44,7 +44,7 @@ const config = {
             type: "fixed",
             items: [
                 "Добавили вам возможность видеть девочек в голосовых чатах! Они подвесчиваются розовым.",
-                "Так же, при упоминании человека отображается цвет его высшей роли"
+                "Так же, при упоминании человека отображается цвет его гендерной роли"
             ]
         }
     ],
@@ -67,7 +67,7 @@ const config = {
                     type: "switch",
                     id: "mentions",
                     name: "Упоминания",
-                    note: "Подсвечивать ли цвета ролей в пингах?",
+                    note: "Подсвечивать ли девочек в упоминаниях?",
                     value: true
                 },
                 {
@@ -205,13 +205,15 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                 const props = Utils.findInTree(instance, p => p?.userId || (p?.id && p?.guildId), {walkable: ["memoizedProps", "return"]});
                 if (!props) continue;
                 const member = GuildMemberStore.getMember(SelectedGuildStore.getGuildId(), props.userId ?? props.id);
-                if (!member?.colorString) continue;
-                const important = this.settings.global.important ? "important" : "";
+                if (!member?.roles) continue;
                 if (this.settings.global.saturation) mention.dataset.accessibility = "desaturate"; // Add to desaturation list for Discord
-                mention.style.setProperty("color", member.colorString, important);
-                mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(member.colorString).join(", ")}, 0.1)`, important);
-                mention.addEventListener("mouseenter", () => mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(member.colorString).join(", ")}, 0.3)`, important));
-                mention.addEventListener("mouseleave", () => mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(member.colorString).join(", ")}, 0.1)`, important));
+                if (member.roles.includes("1089888911439966289")) {
+                    const colorstring = '#f0bdbd';
+                    mention.style.setProperty("color", colorstring);
+                    mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(colorstring).join(", ")}, 0.1)`);
+                    mention.addEventListener("mouseenter", () => mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(colorstring).join(", ")}, 0.3)`));
+                    mention.addEventListener("mouseleave", () => mention.style.setProperty("background-color", `rgb(${ColorConverter.getRGB(colorstring).join(", ")}, 0.1)`));
+                }
             }
         }
 
