@@ -1,7 +1,7 @@
 /**
  * @name ArukuGenderHighlighter
  * @description Добавляет отображение девочек в голосовых каналах на аруку!
- * @version 1.4
+ * @version 1.5
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
  * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
@@ -34,7 +34,7 @@
 const config = {
     name: "ArukuGenderHighlighter",
     author: "clitorium&ladno",
-    version: "1.4",
+    version: "1.5",
     description: "Добавляет отображение девочек в голосовых каналах на аруку!",
     github: "https://github.com/clitorium/ArukuGenderHighlighter",
     github_raw: "https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js",
@@ -44,7 +44,8 @@ const config = {
             type: "fixed",
             items: [
                 "Добавили вам возможность видеть девочек в голосовых чатах! Они подвесчиваются розовым.",
-                "Так же, при упоминании человека отображается цвет его гендерной роли"
+                "Так же, при упоминании человека отображается цвет его гендерной роли",
+                "+1.5: Оптимизация"
             ]
         }
     ],
@@ -159,29 +160,25 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                     return;
                 }
 
-                let colorstring = '';
 
                 if (member.roles.includes("1089888911439966289")) {
-                    colorstring = '#f0bdbd';
-                } else {
-                    colorstring = '#949BA4';
-                }
-        
-                const usernameElement = returnValue.props.children.props.children;
+                    const colorstring = '#f0bdbd';
+                    const usernameElement = returnValue.props.children.props.children;
 
-        
-                if (!usernameElement || !usernameElement.props || !usernameElement.props.className) {
-                    Logger.warn("Username element not found.");
-                    return;
-                }
-        
-                // Применение стиля
-                if (!usernameElement.props.className.includes('usernameSpeaking_')) {
-                    usernameElement.props.style = { ...usernameElement.props.style, color: colorstring, backfaceVisibility: "hidden" };
                     
-                    if (this.settings.global.saturation) {
-                        usernameElement.props["data-accessibility"] = "desaturate";
-                }
+                    if (!usernameElement || !usernameElement.props || !usernameElement.props.className) {
+                        Logger.warn("Username element not found.");
+                        return;
+                    }
+                
+                    // Применение стиля
+                    if (!usernameElement.props.className.includes('usernameSpeaking_')) {
+                        usernameElement.props.style = { ...usernameElement.props.style, color: colorstring, backfaceVisibility: "hidden" };
+
+                        if (this.settings.global.saturation) {
+                            usernameElement.props["data-accessibility"] = "desaturate";
+                    }
+                    }
                 }
             });
         }
