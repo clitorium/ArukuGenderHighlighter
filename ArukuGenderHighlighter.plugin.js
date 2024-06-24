@@ -1,7 +1,7 @@
 /**
  * @name ArukuGenderHighlighter
  * @description Добавляет отображение девочек в голосовых каналах на аруку!
- * @version 1.6
+ * @version 1.7
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
  * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
@@ -34,7 +34,7 @@
 const config = {
     name: "ArukuGenderHighlighter",
     author: "clitorium&ladno",
-    version: "1.6",
+    version: "1.7",
     description: "Добавляет отображение девочек в голосовых каналах на аруку!",
     github: "https://github.com/clitorium/ArukuGenderHighlighter",
     github_raw: "https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js",
@@ -63,6 +63,13 @@ const config = {
                     id: "voice",
                     name: "Войсчаты",
                     note: "Подвечивать ли девочек в голосовых каналах? (грязь)",
+                    value: true
+                },
+                {
+                    type: "switch",
+                    id: "chat",
+                    name: "Чаты",
+                    note: "Подвечивать ли девочек в текстовых каналах? (грязь)",
                     value: true
                 },
                 {
@@ -124,6 +131,7 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
 
         onStart() {
             Utilities.suppressErrors(this.patchVoiceUsers.bind(this), "voice users patch")();
+            Utilities.suppressErrors(this.patchMessageContent.bind(this), "message content patch")();
 
             this.promises = {state: {cancelled: false}, cancel() {this.state.cancelled = true;}};
         }
@@ -180,6 +188,26 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                             usernameElement.props["data-accessibility"] = "desaturate";
                     }
                     }
+                }
+            });
+        }
+
+        patchMessageContent() {
+            const MessageContent = WebpackModules.getModule(m => m?.type?.toString().includes("messageContent") && m?.type?.toString().includes("MESSAGE_EDITED"));
+            Patcher.after(MessageContent, "type", (_, [props], returnValue) => {
+                if (!this.settings.global.chat) return;
+                const channel = DiscordModules.ChannelStore.getChannel(props.message.channel_id);
+                if (!channel || !channel.guild_id) return;
+                const member = this.getMember(props.message.author.id, channel.guild_id);
+                if (member.roles.includes("1089888911439966289")) {
+                    const colorstring = '#f0bdbd';
+                    const refFunc = (element) => {
+                        if (!element) return;
+                        element.style.setProperty("color", colorstring || "", "important");
+                    };
+                    returnValue.props.style = {color: colorstring || ""};
+                    if (this.settings.global.saturation) returnValue.props["data-accessibility"] = "desaturate"; // Add to desaturation list for Discord
+                    returnValue.ref = refFunc;
                 }
             });
         }
