@@ -218,7 +218,7 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                 const props = Utils.findInTree(instance, p => p?.memoizedProps?.children?.[0]?.props?.user, { walkable: ["memoizedProps", "return"] });
                 if (!props) continue;
                 const user = props.memoizedProps.children[0].props.user;
-                const member = GuildMemberStore.getMember(SelectedGuildStore.getGuildId(), user);
+                const member = GuildMemberStore.getMember(SelectedGuildStore.getGuildId(), user.id);
                 if (!member?.roles) continue;
                 if (member.roles.includes("1089888911439966289")) {
                     var colorstring = '#f0bdbd';
