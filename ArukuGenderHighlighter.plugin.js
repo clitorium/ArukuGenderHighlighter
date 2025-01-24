@@ -1,7 +1,7 @@
 /**
  * @name ArukuGenderHighlighter
  * @description Добавляет отображение девочек в голосовых каналах на аруку!
- * @version 1.7
+ * @version 1.8
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
  * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
@@ -34,8 +34,8 @@
 const config = {
     name: "ArukuGenderHighlighter",
     author: "clitorium&ladno",
-    version: "1.7",
-    description: "Добавляет отображение девочек в голосовых каналах на аруку!",
+    version: "1.8",
+    description: "Добавляет отображение девочек по гендерке на аруку!",
     github: "https://github.com/clitorium/ArukuGenderHighlighter",
     github_raw: "https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js",
     changelog: [
@@ -46,7 +46,7 @@ const config = {
                 "Добавили вам возможность видеть девочек в голосовых чатах! Они подвесчиваются розовым.",
                 "Так же, при упоминании человека отображается цвет его гендерной роли",
                 "1.5: Оптимизация",
-                "1.6: При даблклике на сам плагин он попытается закинуть его в папку с плагинами беттердискорд."
+                "1.8: Добавлена функция, теперь можно включить отображение гендерок на трибуне в поднятых ручках"
             ]
         }
     ],
@@ -70,7 +70,7 @@ const config = {
                     id: "chat",
                     name: "Чаты",
                     note: "Подвечивать ли девочек в текстовых каналах? (грязь)",
-                    value: true
+                    value: false
                 },
                 {
                     type: "switch",
@@ -81,9 +81,9 @@ const config = {
                 },
                 {
                     type: "switch",
-                    id: "saturation",
-                    name: "Использовать сатурацию",
-                    note: "Соблюдать уровень насыщенности, установленный в настройках специальных возможностей Discord?",
+                    id: "stage",
+                    name: "Трибуны",
+                    note: "Красить ли ники в поднятых руках на трибуне в зависимости от гендерок?",
                     value: true
                 }
             ]
@@ -130,6 +130,7 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
     return class BetterRoleColors extends Plugin {
 
         onStart() {
+        
             Utilities.suppressErrors(this.patchVoiceUsers.bind(this), "voice users patch")();
             Utilities.suppressErrors(this.patchMessageContent.bind(this), "message content patch")();
 
@@ -139,10 +140,6 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
         onStop() {
             Patcher.unpatchAll();
             this.promises.cancel();
-            if (this.unpatchAccountDetails) {
-                this.unpatchAccountDetails();
-                delete this.unpatchAccountDetails;
-            }
         }
 
         getSettingsPanel() {
@@ -160,12 +157,10 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
         patchVoiceUsers() {        
             Patcher.after(VoiceUser.prototype, "renderName", (thisObject, _, returnValue) => {
                 if (!this.settings.global.voice) {
-                    Logger.log("Voice module setting is disabled.");
                     return;
                 }        
                 const member = this.getMember(thisObject?.props?.user?.id);
                 if (!member || !member.colorString) {
-                    Logger.warn(`Member not found or no colorString. User ID: ${thisObject?.props?.user?.id}`);
                     return;
                 }
 
@@ -176,17 +171,11 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
 
                     
                     if (!usernameElement || !usernameElement.props || !usernameElement.props.className) {
-                        Logger.warn("Username element not found.");
                         return;
                     }
                 
-                    // Применение стиля
                     if (!usernameElement.props.className.includes('usernameSpeaking_')) {
                         usernameElement.props.style = { ...usernameElement.props.style, color: colorstring, backfaceVisibility: "hidden" };
-
-                        if (this.settings.global.saturation) {
-                            usernameElement.props["data-accessibility"] = "desaturate";
-                    }
                     }
                 }
             });
@@ -206,7 +195,6 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                         element.style.setProperty("color", colorstring || "", "important");
                     };
                     returnValue.props.style = {color: colorstring || ""};
-                    if (this.settings.global.saturation) returnValue.props["data-accessibility"] = "desaturate"; // Add to desaturation list for Discord
                     returnValue.ref = refFunc;
                 }
             });
@@ -217,6 +205,32 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
             const element = addedNodes[0];
             if (element.nodeType !== 1) return;
             this.colorMentions(element);
+            this.StageParticipants(element);
+        }
+
+        StageParticipants(element) {
+            if (!this.settings.global.stage) return;
+            element = element.querySelectorAll("[class^='participantMemberContainer_']");
+            if (!element?.length) return;
+            for (const memb of element) {
+                const instance = ReactUtils.getInternalInstance(memb);
+                if (!instance) continue;
+                const props = Utils.findInTree(instance, p => p?.memoizedProps?.children?.[0]?.props?.user, { walkable: ["memoizedProps", "return"] });
+                if (!props) continue;
+                const user = props.memoizedProps.children[0].props.user;
+                const member = GuildMemberStore.getMember(SelectedGuildStore.getGuildId(), user);
+                if (!member?.roles) continue;
+                if (member.roles.includes("1089888911439966289")) {
+                    var colorstring = '#f0bdbd';
+                } else {
+                    var colorstring = '#8db0dd';
+                }
+                const textContainer = memb.querySelector("[class^='participantTextContainer_']");
+                if (!textContainer) continue;
+                const participantName = textContainer.querySelector("span[class^='participantName_']");
+                if (!participantName) continue;
+                participantName.style.setProperty("color", colorstring);
+            }
         }
 
         colorMentions(element) {
@@ -232,7 +246,6 @@ module.exports = !global.ZeresPluginLibrary ? Dummy : (([Plugin, Api]) => {
                 if (!props) continue;
                 const member = GuildMemberStore.getMember(SelectedGuildStore.getGuildId(), props.userId ?? props.id);
                 if (!member?.roles) continue;
-                if (this.settings.global.saturation) mention.dataset.accessibility = "desaturate"; // Add to desaturation list for Discord
                 if (member.roles.includes("1089888911439966289")) {
                     const colorstring = '#f0bdbd';
                     mention.style.setProperty("color", colorstring);
