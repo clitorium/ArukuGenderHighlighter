@@ -4,7 +4,7 @@
  * @version 1.8
  * @author clitorium&ladno
  * @website https://github.com/clitorium/ArukuGenderHighlighter
- * @source https://raw.githubusercontent.com/clitorium/ArukuGirls/main/ArukuGenderHighlighter.plugin.js
+ * @source https://raw.githubusercontent.com/clitorium/ArukuGenderHighlighter/refs/heads/main/ArukuGenderHighlighter.plugin.js
  */
 
 /*@cc_on
